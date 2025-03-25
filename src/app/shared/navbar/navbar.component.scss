@@ -1,0 +1,20 @@
+.navbar {
+    background: #2b5876;
+    color: white;
+    padding: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  ul {
+    list-style: none;
+    display: flex;
+    gap: 15px;
+  }
+  
+  .logout {
+    cursor: pointer;
+    color: red;
+  }
+  

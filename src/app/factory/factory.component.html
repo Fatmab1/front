@@ -1,0 +1,126 @@
+<div class="factory-container">
+  <div class="factory-box">
+    <h2 class="title">Gestion des Usines</h2>
+
+    <table class="factory-table">
+      <thead>
+        <tr>
+          <th>Usine</th>
+          <th>Unité</th>
+          <th>Workshop</th>
+          <th>Machine</th>
+          <th>Capteur</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <ng-container *ngFor="let factory of factoryData">
+          <!-- Usine -->
+          <tr>
+            <td>
+              <button (click)="factory.expanded = !factory.expanded">
+                {{ factory.expanded ? '➖' : '➕' }}
+              </button>
+              {{ factory.label }}
+            </td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>
+              <button class="edit-btn">Modifier</button>
+              <button class="delete-btn">Supprimer</button>
+            </td>
+          </tr>
+
+          <ng-container *ngIf="factory.expanded">
+            <!-- Unités -->
+            <ng-container *ngFor="let unite of factory.children">
+              <tr>
+                <td></td>
+                <td>
+                  <button (click)="unite.expanded = !unite.expanded">
+                    {{ unite.expanded ? '➖' : '➕' }}
+                  </button>
+                  {{ unite.label }}
+                </td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td>
+                  <button class="edit-btn">Modifier</button>
+                  <button class="delete-btn">Supprimer</button>
+                </td>
+              </tr>
+
+              <ng-container *ngIf="unite.expanded">
+                <!-- Workshops -->
+                <ng-container *ngFor="let workshop of unite.children">
+                  <tr>
+                    <td></td>
+                    <td></td>
+                    <td>
+                      <button (click)="workshop.expanded = !workshop.expanded">
+                        {{ workshop.expanded ? '➖' : '➕' }}
+                      </button>
+                      {{ workshop.label }}
+                    </td>
+                    <td></td>
+                    <td></td>
+                    <td>
+                      <button class="edit-btn">Modifier</button>
+                      <button class="delete-btn">Supprimer</button>
+                    </td>
+                  </tr>
+
+                  <ng-container *ngIf="workshop.expanded">
+                    <!-- Machines -->
+                    <ng-container *ngFor="let machine of workshop.children">
+                      <tr>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td>
+                          <button (click)="machine.expanded = !machine.expanded">
+                            {{ machine.expanded ? '➖' : '➕' }}
+                          </button>
+                          {{ machine.label }}
+                        </td>
+                        <td></td>
+                        <td>
+                          <button class="edit-btn">Modifier</button>
+                          <button class="delete-btn">Supprimer</button>
+                        </td>
+                      </tr>
+
+                      <ng-container *ngIf="machine.expanded">
+                        <!-- Capteurs -->
+                        <ng-container *ngFor="let capteur of machine.children">
+                          <tr>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td>{{ capteur.label }}</td>
+                            <td>
+                              <button class="edit-btn">Modifier</button>
+                              <button class="delete-btn">Supprimer</button>
+                            </td>
+                          </tr>
+                        </ng-container>
+                      </ng-container>
+
+                    </ng-container>
+                  </ng-container>
+
+                </ng-container>
+              </ng-container>
+
+            </ng-container>
+          </ng-container>
+
+        </ng-container>
+      </tbody>
+    </table>
+  </div>
+</div>
