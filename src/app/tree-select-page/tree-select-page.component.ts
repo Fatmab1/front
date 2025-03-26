@@ -1,47 +1,75 @@
-import { Component, OnInit, inject } from '@angular/core';
-import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { TreeSelectModule } from 'primeng/treeselect';
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
 import { CardModule } from 'primeng/card';
+import { TreeSelectModule } from 'primeng/treeselect';
 import { ButtonModule } from 'primeng/button';
 import { TreeNode } from 'primeng/api';
-import { CommonModule } from '@angular/common';
 import { TreeService } from './tree.service';
 
 @Component({
-  selector: 'app-tree-select-form',
+  selector: 'app-tree-select-page',
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     ReactiveFormsModule,
-    TreeSelectModule,
     CardModule,
-    ButtonModule,
+    TreeSelectModule,
+    ButtonModule
   ],
   templateUrl: './tree-select-page.component.html',
   styleUrls: ['./tree-select-page.component.css']
 })
-export class TreeSelectFormComponent implements OnInit {
+export class TreeSelectPageComponent implements OnInit {
   formGroup: FormGroup;
-  nodes: TreeNode[] = [];
-  private treeService = inject(TreeService); 
-data: any;
-  
-  constructor(private fb: FormBuilder) {
+  treeData: TreeNode[] = [];
+  isLoading = true;
+  selectedNode: TreeNode | undefined;
+
+  constructor(
+    private fb: FormBuilder,
+    private treeService: TreeService
+  ) {
     this.formGroup = this.fb.group({
-      selectedNodes: [null]
+      selectedNode: [null]
     });
   }
 
   ngOnInit(): void {
-    
-     this.loadTreeData();
+    this.loadTreeData();
   }
 
   loadTreeData(): void {
-    this.data = ['Option 1', 'Option 2', 'Option 3'];
+    this.treeService.getTreeNodes().subscribe({
+      next: (usines) => {
+        this.treeData = this.treeService.transformToTreeNode(usines);
+        this.isLoading = false;
+      },
+      error: (err) => {
+        console.error('Error loading tree data:', err);
+        this.isLoading = false;
+      }
+    });
+  }
+
+  onNodeSelect(event: any): void {
+    this.selectedNode = event.node;
+    console.log('Selected Node:', this.selectedNode);
   }
 
   onSubmit(): void {
-    console.log('Valeur sélectionnée :', this.formGroup.get('selectedNodes')?.value);
+    if (this.formGroup.valid && this.selectedNode) {
+      console.log('Form submitted with:', this.selectedNode);
+      // Handle form submission with selected node data
+    }
+  }
+  getNodeType(node: TreeNode): string {
+    if (node.key?.startsWith('usine')) return 'Usine';
+    if (node.key?.startsWith('unite')) return 'Unité de Fabrication';
+    if (node.key?.startsWith('workshop')) return 'Atelier';
+    if (node.key?.startsWith('machine')) return 'Machine';
+    if (node.key?.startsWith('sensor')) return 'Capteur';
+    return 'Unknown';
   }
 }

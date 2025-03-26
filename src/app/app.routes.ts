@@ -4,7 +4,7 @@ import { SignupComponent } from './auth/signup/signup.component';
 import { AdminComponent } from './admin/admin/admin.component';
 import { DashboardComponent } from './app/dashboard/dashboard.component';
 import { FactoryComponent } from './factory/factory.component';
-import { TreeSelectFormComponent } from './tree-select-page/tree-select-page.component';
+import { TreeSelectPageComponent } from './tree-select-page/tree-select-page.component';
 
 
 export const routes: Routes = [
@@ -14,7 +14,7 @@ export const routes: Routes = [
   { path: 'dashboard', component: DashboardComponent },
   { path: 'admin', component: AdminComponent },
   { path: 'factory', component: FactoryComponent },
-  { path: 'tree', component: TreeSelectFormComponent },
+  { path: 'tree', component: TreeSelectPageComponent },
 
 
   { path: '**', redirectTo: 'auth/login' } // Redirection vers login si la route n'existe pas
