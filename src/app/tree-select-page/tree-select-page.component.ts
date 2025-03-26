@@ -1,6 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
+import { 
+  FormsModule, 
+  ReactiveFormsModule, 
+  FormBuilder, 
+  FormGroup 
+} from '@angular/forms';
 import { CardModule } from 'primeng/card';
 import { TreeSelectModule } from 'primeng/treeselect';
 import { ButtonModule } from 'primeng/button';
@@ -13,7 +18,7 @@ import { TreeService } from './tree.service';
   imports: [
     CommonModule,
     FormsModule,
-    ReactiveFormsModule,
+    ReactiveFormsModule, // This provides FormBuilder
     CardModule,
     TreeSelectModule,
     ButtonModule
@@ -22,19 +27,19 @@ import { TreeService } from './tree.service';
   styleUrls: ['./tree-select-page.component.css']
 })
 export class TreeSelectPageComponent implements OnInit {
-  formGroup: FormGroup;
-  treeData: TreeNode[] = [];
-  isLoading = true;
-  selectedNode: TreeNode | undefined;
 
   constructor(
-    private fb: FormBuilder,
+    private fb: FormBuilder, // Now properly injectable
     private treeService: TreeService
   ) {
     this.formGroup = this.fb.group({
       selectedNode: [null]
     });
   }
+  formGroup: FormGroup;
+  treeData: TreeNode[] = [];
+  isLoading = true;
+  selectedNode: TreeNode | undefined;
 
   ngOnInit(): void {
     this.loadTreeData();
