@@ -69,4 +69,14 @@ export class TreeService {
       }))
     }));
   }
+
+  async addNode(node : any , type : string){
+    console.log("add " , node);
+    return await this.http.post(`${this.apiUrl}/addNode` , node)
+  }
+
+  async deleteNode(node : any ){
+    console.log("delete " , node);
+    return await this.http.delete(`${this.apiUrl}/deleteNode` , node)
+  } 
 }

@@ -92,36 +92,7 @@ export class TreeSelectPageComponent implements OnInit {
     this.contextMenuNode = node;
   }
 
-  addNode(): void {    
-    if (!this.contextMenuNode) return;
 
-    console.log('Adding node under:', this.contextMenuNode);
-    const newNode: TreeNode = {
-      label: 'New Node',
-      key: `new-${Date.now()}`,
-      // Add other necessary properties
-    };
-
-    if (!this.contextMenuNode.children) {
-      this.contextMenuNode.children = [];
-    }
-    this.contextMenuNode.children.push(newNode);
-    
-    // Refresh the tree data to reflect changes
-    this.treeData = [...this.treeData];
-  }
-
-  deleteNode(): void {
-    console.log("deletteeeeeee");
-    
-    if (!this.contextMenuNode) return;
-
-    console.log('Deleting node:', this.contextMenuNode);
-    this.findAndRemoveNode(this.treeData, this.contextMenuNode);
-    
-    // Refresh the tree data to reflect changes
-    this.treeData = [...this.treeData];
-  }
 
   findAndRemoveNode(nodes: TreeNode[], nodeToRemove: TreeNode): boolean {
     for (let i = 0; i < nodes.length; i++) {
@@ -165,5 +136,52 @@ export class TreeSelectPageComponent implements OnInit {
 
     const typeKey = Object.keys(typeMap).find(key => node.key?.startsWith(key));
     return typeKey ? typeMap[typeKey] : 'Unknown';
+  }
+
+  addNode(): void {    
+
+  }
+
+  async deleteNode(): Promise<void> {
+    if (!this.contextMenuNode) {
+      alert('No node selected for deletion');
+      return;
+    }
+  
+    // // Confirm deletion with the user
+    // const confirmDelete = window.confirm(`Are you sure you want to delete the ${this.getNodeType(this.contextMenuNode)} node?`);
+    
+    // if (confirmDelete) {
+    //   // Remove the node from the tree data
+    //   const deleted = this.findAndRemoveNode(this.treeData, this.contextMenuNode);
+  
+    //   if (deleted) {
+    //     // Call service method to delete node from backend
+    //     (await this.treeService.deleteNode(this.contextMenuNode.key)).subscribe({
+    //       next: () => {
+    //         // Reset selected node if it was the deleted node
+    //         if (this.selectedNode === this.contextMenuNode) {
+    //           this.selectedNode = undefined;
+    //           this.formGroup.get('selectedNode')?.setValue(null);
+    //         }
+  
+    //         // Reset context menu node
+    //         this.contextMenuNode = null;
+  
+    //         // Trigger change detection
+    //         this.treeData = [...this.treeData];
+  
+    //         console.log('Node deleted successfully');
+    //       },
+    //       error: (err : any) => {
+    //         console.error('Error deleting node:', err);
+    //         // Optionally, revert the local deletion if backend fails
+    //         this.loadTreeData();
+    //       }
+    //     });
+    //   } else {
+    //     console.warn('Node not found in tree');
+    //   }
+    // }
   }
 }
