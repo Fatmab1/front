@@ -1,4 +1,4 @@
-import { Component, OnInit, importProvidersFrom } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { 
   FormsModule, 
@@ -10,6 +10,8 @@ import {
 import { CardModule } from 'primeng/card';
 import { TreeSelectModule } from 'primeng/treeselect';
 import { ButtonModule } from 'primeng/button';
+import { ContextMenuModule } from 'primeng/contextmenu';
+import { MenuItem } from 'primeng/api';
 import { TreeNode } from 'primeng/api';
 import { TreeService } from './tree.service';
 
@@ -22,7 +24,8 @@ import { TreeService } from './tree.service';
     ReactiveFormsModule,
     CardModule,
     TreeSelectModule,
-    ButtonModule
+    ButtonModule,
+    ContextMenuModule
   ],
   templateUrl: './tree-select-page.component.html',
   styleUrls: ['./tree-select-page.component.css']
@@ -32,6 +35,8 @@ export class TreeSelectPageComponent implements OnInit {
   treeData: TreeNode[] = [];
   isLoading = true;
   selectedNode: TreeNode | undefined;
+  contextMenuItems: MenuItem[] = [];
+  contextMenuNode: TreeNode | null = null;
 
   constructor(
     private fb: FormBuilder,
@@ -41,8 +46,25 @@ export class TreeSelectPageComponent implements OnInit {
       selectedNode: [null, Validators.required]
     });
   }
+
   ngOnInit(): void {
     this.loadTreeData();
+    this.setupContextMenu();
+  }
+
+  setupContextMenu(): void {
+    this.contextMenuItems = [
+      {
+        label: 'Ajouter',
+        icon: 'pi pi-plus',
+        command: () => this.addNode()
+      },
+      {
+        label: 'Supprimer',
+        icon: 'pi pi-trash',
+        command: () => this.deleteNode()
+      }
+    ];
   }
 
   loadTreeData(): void {
@@ -55,7 +77,6 @@ export class TreeSelectPageComponent implements OnInit {
       error: (err) => {
         console.error('Error loading tree data:', err);
         this.isLoading = false;
-        // Consider adding user notification here
       }
     });
   }
@@ -66,9 +87,60 @@ export class TreeSelectPageComponent implements OnInit {
     console.log('Selected Node:', this.selectedNode);
   }
 
+  onContextMenu(event: MouseEvent, node: TreeNode): void {
+    event.preventDefault();
+    this.contextMenuNode = node;
+  }
+
+  addNode(): void {    
+    if (!this.contextMenuNode) return;
+
+    console.log('Adding node under:', this.contextMenuNode);
+    const newNode: TreeNode = {
+      label: 'New Node',
+      key: `new-${Date.now()}`,
+      // Add other necessary properties
+    };
+
+    if (!this.contextMenuNode.children) {
+      this.contextMenuNode.children = [];
+    }
+    this.contextMenuNode.children.push(newNode);
+    
+    // Refresh the tree data to reflect changes
+    this.treeData = [...this.treeData];
+  }
+
+  deleteNode(): void {
+    console.log("deletteeeeeee");
+    
+    if (!this.contextMenuNode) return;
+
+    console.log('Deleting node:', this.contextMenuNode);
+    this.findAndRemoveNode(this.treeData, this.contextMenuNode);
+    
+    // Refresh the tree data to reflect changes
+    this.treeData = [...this.treeData];
+  }
+
+  findAndRemoveNode(nodes: TreeNode[], nodeToRemove: TreeNode): boolean {
+    for (let i = 0; i < nodes.length; i++) {
+      if (nodes[i] === nodeToRemove) {
+        nodes.splice(i, 1);
+        return true;
+      }
+
+      if (nodes[i].children) {
+        if (this.findAndRemoveNode(nodes[i].children!, nodeToRemove)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   onSubmit(): void {
     if (this.formGroup.invalid || !this.selectedNode) {
-      // Handle form validation errors
       this.formGroup.markAllAsTouched();
       return;
     }
@@ -78,7 +150,6 @@ export class TreeSelectPageComponent implements OnInit {
       rawValue: this.formGroup.getRawValue()
     };
     console.log('Form submitted with:', formData);
-    // Add your form submission logic here
   }
 
   getNodeType(node: TreeNode): string {

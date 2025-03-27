@@ -17,7 +17,10 @@
           scrollHeight="300px"
         >
           <ng-template let-node pTemplate="option">
-            <div class="flex items-center gap-2">
+            <div 
+              class="flex items-center gap-2"
+              (contextmenu)="onContextMenu($event, node)"
+            >
               <i [class]="node.icon" class="mr-2"></i>
               <span>{{ node.label }}</span>
             </div>
@@ -28,10 +31,11 @@
           </ng-template>
         </p-treeselect>
 
+        <p-contextMenu [global]="true" [model]="contextMenuItems"></p-contextMenu>
+
         <div *ngIf="selectedNode" class="p-3 bg-gray-50 rounded">
           <h4 class="font-bold mb-2">Selected Item:</h4>
-          <p><span class="font-semibold">Type:</span>
-             {{ getNodeType(selectedNode) }}
+          <p><span class="font-semibold">Type:</span> {{ getNodeType(selectedNode) }}
           </p>
           <p><span class="font-semibold">Name:</span> {{ selectedNode.label }}</p>
           <p *ngIf="selectedNode.data?.id_sensor" class="font-semibold">
