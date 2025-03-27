@@ -130,8 +130,6 @@ export class TreeSelectPageComponent implements OnInit, OnDestroy {
         }
       }
     }
-
-
     return false;
   }
 
@@ -160,8 +158,8 @@ export class TreeSelectPageComponent implements OnInit, OnDestroy {
     });
   }
 
-  getNodeType(node: TreeNode): string {
-    if (!node.key) return 'Inconnu';
+  getNodeType(node: TreeNode | null): string {
+    if (!node || !node.key) return 'Inconnu';
     
     const typeMap: Record<string, string> = {
       'usine_': 'Usine',
@@ -187,11 +185,13 @@ export class TreeSelectPageComponent implements OnInit, OnDestroy {
         detail: 'Aucun nœud sélectionné',
         life: 3000
       });
-      return;
+      console.log(this.contextMenuNode);
+      
     }
 
     this.dialogRef = this.dialogService.open(AddNodeDialogComponent, {
-      header: `Ajouter à ${this.getNodeType(this.contextMenuNode)}`,
+
+      // header: `Ajouter à ${this.getNodeType(this.contextMenuNode)}`,
       width: '50%',
       data: {
         parentNode: this.contextMenuNode,
