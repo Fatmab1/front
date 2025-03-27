@@ -20,7 +20,7 @@ export interface Workshop {
 }
 
 export interface UniteFabrication {
-  uniteFabrications: string;  // Fixed typo from "uniteFabrications" to "uniteFabrications"
+  uniteFabrications: string;
   workshops: Workshop[];
 }
 
@@ -29,20 +29,24 @@ export interface Usine {
   uniteFabrications: UniteFabrication[];
 }
 
+export interface NodeAddRequest {
+  parentNode: any;
+  name: string;
+  type: string;
+  parentType: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class TreeService {
-  private readonly apiUrl = 'http://localhost:3000/usines/initialize';
+  private readonly apiUrl = 'http://localhost:3000/';
 
   constructor(private http: HttpClient) {}
 
   getTreeNodes(): Observable<Usine[]> {
-    return this.http.get<Usine[]>(this.apiUrl).pipe(
-      catchError(error => {
-        console.error('Erreur lors du chargement des données:', error);
-        return throwError(() => new Error('Erreur de chargement des données.'));
-      })
+    return this.http.get<Usine[]>(`${this.apiUrl}usines/initialize`).pipe(
+      catchError(this.handleError('Erreur de chargement des données'))
     );
   }
 
@@ -55,22 +59,27 @@ export class TreeService {
     return usines.map(usine => ({
       key: `usine_${usine.usine}`,
       label: usine.usine,
+      type: 'Usine',
       icon: 'pi pi-building',
       children: usine.uniteFabrications?.map(unite => ({
         key: `unite_${unite.uniteFabrications}`,
         label: unite.uniteFabrications,
+        type: 'Unité de Fabrication',
         icon: 'pi pi-cog',
         children: unite.workshops?.map(workshop => ({
           key: `workshop_${workshop.workshop}`,
           label: workshop.workshop,
+          type: 'Atelier',
           icon: 'pi pi-wrench',
           children: workshop.machines?.map(machine => ({
             key: `machine_${machine.machine}`,
             label: machine.machine,
+            type: 'Machine',
             icon: 'pi pi-cog',
             children: machine.capteurs?.map(sensor => ({
               key: `sensor_${sensor.id_sensor}`,
               label: `${sensor.type} (ID: ${sensor.id_sensor})`,
+              type: 'Capteur',
               icon: 'pi pi-microchip',
               data: { ...sensor }
             })) || []
@@ -80,23 +89,36 @@ export class TreeService {
     }));
   }
 
-  addNode(node: any, type: string): Observable<any> {
-    return this.http.post(`${this.apiUrl}/addNode`, { node, type }).pipe(
-      catchError(error => {
-        console.error('Erreur lors de l\'ajout du nœud:', error);
-        return throwError(() => new Error('Échec de l\'ajout du nœud.'));
-      })
+  addNode(nodeData: NodeAddRequest): Observable<any> {
+
+    // Prepare the node data for backend
+    const preparedNodeData = {
+      parentNode: nodeData.parentNode ? { label: nodeData.parentNode.label } : null,
+      name: nodeData.name,
+      type: nodeData.type,
+      parentType: nodeData.parentType
+    };
+    console.log("Node Data preparedNodeData:", preparedNodeData);
+
+
+    return this.http.post(`${this.apiUrl}usines/addNode`, preparedNodeData).pipe(
+      catchError(this.handleError('Échec de l\'ajout du nœud'))
     );
   }
 
   deleteNode(node: any, type: string): Observable<any> {
-    return this.http.request('DELETE', `${this.apiUrl}/deleteNode`, { 
+    return this.http.request('DELETE', `${this.apiUrl}usines/deleteNode`, { 
       body: { node, type } 
     }).pipe(
-      catchError(error => {
-        console.error('Erreur lors de la suppression du nœud:', error);
-        return throwError(() => new Error('Échec de la suppression du nœud.'));
-      })
+      catchError(this.handleError('Échec de la suppression du nœud'))
     );
+  }
+
+  // Generic error handler
+  private handleError(message: string) {
+    return (error: any) => {
+      console.error(message, error);
+      return throwError(() => new Error(message));
+    };
   }
 }

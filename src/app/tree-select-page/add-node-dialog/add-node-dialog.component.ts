@@ -7,6 +7,13 @@ import { DropdownModule } from 'primeng/dropdown';
 import { FormsModule } from '@angular/forms';
 import { DividerModule } from 'primeng/divider';
 
+interface NodeType {
+  parentNode: any;
+  name: string;
+  type: string;
+  parentType: string;
+}
+
 @Component({
   selector: 'app-add-node-dialog',
   standalone: true,
@@ -21,7 +28,7 @@ import { DividerModule } from 'primeng/divider';
   template: `
     <div class="p-fluid grid p-2">
       <div class="col-12">
-        <h3 class="text-center">Ajouter à {{ parentNode.label }}</h3>
+        <h3 class="text-center">Ajouter à {{ parentNode?.label || 'Nœud' }}</h3>
         <p-divider></p-divider>
       </div>
 
@@ -63,7 +70,7 @@ import { DividerModule } from 'primeng/divider';
           (click)="onAdd()"
           class="p-button-success"
           icon="pi pi-check"
-          [disabled]="!name.trim() || (!selectedType && parentNodeType !== 'Machine')"
+          [disabled]="!isFormValid()"
         ></button>
       </div>
     </div>
@@ -99,23 +106,33 @@ export class AddNodeDialogComponent {
     };
 
     this.childTypes = typeMap[this.parentNodeType] || [];
-    this.selectedType = this.childTypes[0];
+    
+    // Ensure a default type is selected if available
+    if (this.childTypes.length > 0) {
+      this.selectedType = this.childTypes[0];
+    }
+  }
+
+  isFormValid(): boolean {
+    return !!(
+      this.name.trim() && 
+      (this.parentNodeType === 'Machine' || this.selectedType)
+    );
   }
 
   onAdd(): void {
-    if (!this.name.trim()) {
+    // Additional validation before closing
+    if (!this.isFormValid()) {
       return;
     }
 
-    if (this.parentNodeType !== 'Machine' && !this.selectedType) {
-      return;
-    }
-
-    this.ref.close({
+    const nodeData: NodeType = {
       parentNode: this.parentNode,
       name: this.name.trim(),
       type: this.selectedType || 'Capteur',
       parentType: this.parentNodeType
-    });
+    };
+
+    this.ref.close(nodeData);
   }
 }

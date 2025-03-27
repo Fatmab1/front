@@ -17,10 +17,14 @@ import { TreeNode } from 'primeng/api';
 import { TreeService } from './tree.service';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { AddNodeDialogComponent } from './add-node-dialog/add-node-dialog.component';
-import { firstValueFrom } from 'rxjs';
-
+import { firstValueFrom, Subscription } from 'rxjs';
+export interface NodeAddRequest {
+  parentNode: any;
+  name: string;
+  type: string;
+  parentType: string;
+}
 @Component({
-  
   selector: 'app-tree-select-page',
   standalone: true,
   imports: [
@@ -38,13 +42,16 @@ import { firstValueFrom } from 'rxjs';
 })
 export class TreeSelectPageComponent implements OnInit, OnDestroy {
   @ViewChild('ctxMenuTarget', { static: false }) ctxMenuTarget!: ElementRef;
+  
   formGroup: FormGroup;
   treeData: TreeNode[] = [];
   isLoading = true;
   selectedNode: TreeNode | null = null;
   contextMenuItems: MenuItem[] = [];
   contextMenuNode: TreeNode | null = null;
+  
   private dialogRef: DynamicDialogRef | null = null;
+  private subscriptions: Subscription[] = [];
 
   constructor(
     private fb: FormBuilder,
@@ -65,6 +72,7 @@ export class TreeSelectPageComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.dialogRef?.close();
+    this.subscriptions.forEach(sub => sub.unsubscribe());
   }
 
   private setupContextMenu(): void {
@@ -84,7 +92,7 @@ export class TreeSelectPageComponent implements OnInit, OnDestroy {
 
   loadTreeData(): void {
     this.isLoading = true;
-    this.treeService.getTreeNodes().subscribe({
+    const sub = this.treeService.getTreeNodes().subscribe({
       next: (usines) => {
         this.treeData = this.treeService.transformToTreeNode(usines);
         this.isLoading = false;
@@ -100,11 +108,12 @@ export class TreeSelectPageComponent implements OnInit, OnDestroy {
         });
       }
     });
+    this.subscriptions.push(sub);
   }
 
   onNodeSelect(event: { node: TreeNode }): void {
     this.selectedNode = event.node;
-    this.contextMenuNode = event.node; // Keep context menu node in sync
+    this.contextMenuNode = event.node;
     this.formGroup.patchValue({ selectedNode: event.node });
   }
 
@@ -117,17 +126,17 @@ export class TreeSelectPageComponent implements OnInit, OnDestroy {
   }
 
   private findAndRemoveNode(nodes: TreeNode[] | null, nodeToRemove: TreeNode | null): boolean {
-    if(nodes && nodeToRemove){
-      const index = nodes.findIndex(node => node.key === nodeToRemove.key);
-      if (index !== -1) {
-        nodes.splice(index, 1);
+    if (!nodes || !nodeToRemove) return false;
+
+    const index = nodes.findIndex(node => node.key === nodeToRemove.key);
+    if (index !== -1) {
+      nodes.splice(index, 1);
+      return true;
+    }
+
+    for (const node of nodes) {
+      if (node.children && this.findAndRemoveNode(node.children, nodeToRemove)) {
         return true;
-      }
-  
-      for (const node of nodes) {
-        if (node.children && this.findAndRemoveNode(node.children, nodeToRemove)) {
-          return true;
-        }
       }
     }
     return false;
@@ -185,46 +194,55 @@ export class TreeSelectPageComponent implements OnInit, OnDestroy {
         detail: 'Aucun nœud sélectionné',
         life: 3000
       });
-      console.log(this.contextMenuNode);
-      
+      return;
     }
-
+  
     this.dialogRef = this.dialogService.open(AddNodeDialogComponent, {
-
-      // header: `Ajouter à ${this.getNodeType(this.contextMenuNode)}`,
       width: '50%',
       data: {
         parentNode: this.contextMenuNode,
         nodeType: this.getNodeType(this.contextMenuNode)
       }
     });
-
-    this.dialogRef.onClose.subscribe((newNodeData: any) => {
+  
+    const sub = this.dialogRef.onClose.subscribe((newNodeData: any) => {
       if (newNodeData) {
-        this.treeService.addNode(newNodeData, this.getNodeType(this.contextMenuNode!))
-          .subscribe({
-            next: () => {
-              this.messageService.add({
-                severity: 'success',
-                summary: 'Succès',
-                detail: 'Nœud ajouté avec succès',
-                life: 3000
-              });
-              this.loadTreeData();
-            },
-            error: (err) => {
-              console.error("Erreur lors de l'ajout:", err);
-              this.messageService.add({
-                severity: 'error',
-                summary: 'Erreur',
-                detail: "Échec de l'ajout du nœud",
-                life: 3000
-              });
-            }
-          });
+        // Prepare data to match NodeAddRequest interface
+        const nodeAddRequest = {
+          parentNode: this.contextMenuNode,
+          name: newNodeData.name,
+          type: newNodeData.type || this.getNodeType(this.contextMenuNode),
+          parentType: this.getNodeType(this.contextMenuNode)
+        };
+  
+        this.treeService.addNode(nodeAddRequest).subscribe({
+          next: () => {
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Succès',
+              detail: 'Nœud ajouté avec succès',
+              life: 3000
+            });
+            this.loadTreeData();
+          },
+          error: (err) => {
+            console.error("Erreur lors de l'ajout:", err);
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Erreur',
+              detail: "Échec de l'ajout du nœud",
+              life: 3000
+            });
+          }
+        });
       }
     });
+    this.subscriptions.push(sub);
   }
+
+
+
+
 
   async deleteNode(): Promise<void> {
     if (!this.contextMenuNode) {
@@ -247,9 +265,10 @@ export class TreeSelectPageComponent implements OnInit, OnDestroy {
       rejectLabel: 'Non',
       accept: async () => {
         try {
-          await firstValueFrom(
-            this.treeService.deleteNode(this.contextMenuNode!, nodeType)
-          );
+          // Uncomment when backend is ready
+          // await firstValueFrom(
+          //   this.treeService.deleteNode(this.contextMenuNode!, nodeType)
+          // );
           
           const deleted = this.findAndRemoveNode(this.treeData, this.contextMenuNode);
           
