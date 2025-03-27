@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { 
   FormsModule, 
@@ -11,9 +11,12 @@ import { CardModule } from 'primeng/card';
 import { TreeSelectModule } from 'primeng/treeselect';
 import { ButtonModule } from 'primeng/button';
 import { ContextMenuModule } from 'primeng/contextmenu';
-import { MenuItem } from 'primeng/api';
+import { MenuItem, MessageService } from 'primeng/api';
 import { TreeNode } from 'primeng/api';
 import { TreeService } from './tree.service';
+import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
+import { AddNodeDialogComponent } from './add-node-dialog/add-node-dialog.component';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-tree-select-page',
@@ -28,19 +31,23 @@ import { TreeService } from './tree.service';
     ContextMenuModule
   ],
   templateUrl: './tree-select-page.component.html',
-  styleUrls: ['./tree-select-page.component.css']
+  styleUrls: ['./tree-select-page.component.css'],
+  providers: [MessageService, DialogService]
 })
-export class TreeSelectPageComponent implements OnInit {
+export class TreeSelectPageComponent implements OnInit, OnDestroy {
   formGroup: FormGroup;
   treeData: TreeNode[] = [];
   isLoading = true;
-  selectedNode: TreeNode | undefined;
+  selectedNode: TreeNode | null = null;
   contextMenuItems: MenuItem[] = [];
   contextMenuNode: TreeNode | null = null;
+  private dialogRef: DynamicDialogRef | null = null;
 
   constructor(
     private fb: FormBuilder,
-    private treeService: TreeService
+    private treeService: TreeService,
+    private messageService: MessageService,
+    private dialogService: DialogService
   ) {
     this.formGroup = this.fb.group({
       selectedNode: [null, Validators.required]
@@ -52,7 +59,11 @@ export class TreeSelectPageComponent implements OnInit {
     this.setupContextMenu();
   }
 
-  setupContextMenu(): void {
+  ngOnDestroy(): void {
+    this.dialogRef?.close();
+  }
+
+  private setupContextMenu(): void {
     this.contextMenuItems = [
       {
         label: 'Ajouter',
@@ -77,14 +88,18 @@ export class TreeSelectPageComponent implements OnInit {
       error: (err) => {
         console.error('Error loading tree data:', err);
         this.isLoading = false;
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to load tree data'
+        });
       }
     });
   }
 
   onNodeSelect(event: { node: TreeNode }): void {
     this.selectedNode = event.node;
-    this.formGroup.get('selectedNode')?.setValue(event.node);
-    console.log('Selected Node:', this.selectedNode);
+    this.formGroup.patchValue({ selectedNode: event.node });
   }
 
   onContextMenu(event: MouseEvent, node: TreeNode): void {
@@ -92,22 +107,30 @@ export class TreeSelectPageComponent implements OnInit {
     this.contextMenuNode = node;
   }
 
+  private findAndRemoveNode(nodes: TreeNode[], nodeToRemove: TreeNode): boolean {
+    const index = nodes.findIndex(node => node === nodeToRemove);
+    if (index !== -1) {
+      nodes.splice(index, 1);
+      return true;
+    }
 
-
-  findAndRemoveNode(nodes: TreeNode[], nodeToRemove: TreeNode): boolean {
-    for (let i = 0; i < nodes.length; i++) {
-      if (nodes[i] === nodeToRemove) {
-        nodes.splice(i, 1);
+    for (const node of nodes) {
+      if (node.children && this.findAndRemoveNode(node.children, nodeToRemove)) {
         return true;
-      }
-
-      if (nodes[i].children) {
-        if (this.findAndRemoveNode(nodes[i].children!, nodeToRemove)) {
-          return true;
-        }
       }
     }
     return false;
+  }
+
+  private findParentNode(nodes: TreeNode[], childNode: TreeNode): TreeNode | null {
+    for (const node of nodes) {
+      if (node.children?.includes(childNode)) {
+        return node;
+      }
+      const found = this.findParentNode(node.children || [], childNode);
+      if (found) return found;
+    }
+    return null;
   }
 
   onSubmit(): void {
@@ -116,72 +139,128 @@ export class TreeSelectPageComponent implements OnInit {
       return;
     }
 
-    const formData = {
+    console.log('Form submitted with:', {
       selectedNode: this.selectedNode,
       rawValue: this.formGroup.getRawValue()
-    };
-    console.log('Form submitted with:', formData);
+    });
   }
 
   getNodeType(node: TreeNode): string {
     if (!node.key) return 'Unknown';
     
     const typeMap: Record<string, string> = {
-      'usine': 'Usine',
-      'unite': 'Unité de Fabrication',
-      'workshop': 'Atelier',
-      'machine': 'Machine',
-      'sensor': 'Capteur'
+      'usine_': 'Usine',
+      'unite_': 'Unité de Fabrication',
+      'workshop_': 'Atelier',
+      'machine_': 'Machine',
+      'sensor_': 'Capteur'
     };
 
-    const typeKey = Object.keys(typeMap).find(key => node.key?.startsWith(key));
-    return typeKey ? typeMap[typeKey] : 'Unknown';
+    for (const [prefix, type] of Object.entries(typeMap)) {
+      if (node.key.startsWith(prefix)) {
+        return type;
+      }
+    }
+    return 'Unknown';
   }
 
-  addNode(): void {    
+  addNode(): void {
+    console.log("salem");
+    
+    if (!this.contextMenuNode) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Warning',
+        detail: 'No node selected for adding child'
+      });
+      return;
+    }
 
+    this.dialogRef = this.dialogService.open(AddNodeDialogComponent, {
+      header: `Add Child to ${this.getNodeType(this.contextMenuNode)}`,
+      width: '50%',
+      data: {
+        parentNode: this.contextMenuNode,
+        nodeType: this.getNodeType(this.contextMenuNode)
+      }
+    });
+
+    this.dialogRef.onClose.subscribe((newNodeData: unknown) => {
+      if (newNodeData) {
+        this.treeService.addNode(newNodeData, this.getNodeType(this.contextMenuNode!))
+          .subscribe({
+            next: () => {
+              this.messageService.add({
+                severity: 'success',
+                summary: 'Success',
+                detail: 'Node added successfully'
+              });
+              this.loadTreeData();
+            },
+            error: (err) => {
+              console.error('Error adding node:', err);
+              this.messageService.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'Failed to add node'
+              });
+            }
+          });
+      }
+    });
   }
 
   async deleteNode(): Promise<void> {
     if (!this.contextMenuNode) {
-      alert('No node selected for deletion');
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Warning',
+        detail: 'No node selected for deletion'
+      });
       return;
     }
-  
-    // // Confirm deletion with the user
-    // const confirmDelete = window.confirm(`Are you sure you want to delete the ${this.getNodeType(this.contextMenuNode)} node?`);
+
+    const nodeType = this.getNodeType(this.contextMenuNode);
+    const confirmDelete = confirm(`Are you sure you want to delete this ${nodeType}?`);
     
-    // if (confirmDelete) {
-    //   // Remove the node from the tree data
-    //   const deleted = this.findAndRemoveNode(this.treeData, this.contextMenuNode);
-  
-    //   if (deleted) {
-    //     // Call service method to delete node from backend
-    //     (await this.treeService.deleteNode(this.contextMenuNode.key)).subscribe({
-    //       next: () => {
-    //         // Reset selected node if it was the deleted node
-    //         if (this.selectedNode === this.contextMenuNode) {
-    //           this.selectedNode = undefined;
-    //           this.formGroup.get('selectedNode')?.setValue(null);
-    //         }
-  
-    //         // Reset context menu node
-    //         this.contextMenuNode = null;
-  
-    //         // Trigger change detection
-    //         this.treeData = [...this.treeData];
-  
-    //         console.log('Node deleted successfully');
-    //       },
-    //       error: (err : any) => {
-    //         console.error('Error deleting node:', err);
-    //         // Optionally, revert the local deletion if backend fails
-    //         this.loadTreeData();
-    //       }
-    //     });
-    //   } else {
-    //     console.warn('Node not found in tree');
-    //   }
-    // }
+    if (!confirmDelete) return;
+
+    try {
+      await firstValueFrom(
+        this.treeService.deleteNode(this.contextMenuNode, nodeType)
+      );
+      
+      const deleted = this.findAndRemoveNode(this.treeData, this.contextMenuNode);
+      
+      if (deleted) {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Success',
+          detail: 'Node deleted successfully'
+        });
+        
+        if (this.selectedNode === this.contextMenuNode) {
+          this.selectedNode = null;
+          this.formGroup.patchValue({ selectedNode: null });
+        }
+        
+        this.contextMenuNode = null;
+        this.treeData = [...this.treeData];
+      } else {
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Warning',
+          detail: 'Node not found in local tree'
+        });
+      }
+    } catch (err) {
+      console.error('Error deleting node:', err);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Failed to delete node'
+      });
+      this.loadTreeData();
+    }
   }
 }
