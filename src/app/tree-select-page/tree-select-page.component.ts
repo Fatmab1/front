@@ -125,17 +125,17 @@ export class TreeSelectPageComponent implements OnInit, OnDestroy {
     this.formGroup.patchValue({ selectedNode: node });
   }
 
-  private findAndRemoveNode(nodes: TreeNode[] | null, nodeToRemove: TreeNode | null): boolean {
-    if (!nodes || !nodeToRemove) return false;
+  private findAndRemoveNode(nodes: TreeNode[] | null, key : string): boolean {
+    if (!nodes || !key) return false;
 
-    const index = nodes.findIndex(node => node.key === nodeToRemove.key);
+    const index = nodes.findIndex(node => node.key === key);
     if (index !== -1) {
       nodes.splice(index, 1);
       return true;
     }
 
     for (const node of nodes) {
-      if (node.children && this.findAndRemoveNode(node.children, nodeToRemove)) {
+      if (node.children && this.findAndRemoveNode(node.children, key)) {
         return true;
       }
     }
@@ -245,20 +245,6 @@ export class TreeSelectPageComponent implements OnInit, OnDestroy {
     let type =this.getNodeType(this.contextMenuNode)
   }
 
-  
-
-
-
-
-
-
-
-
-
-
-
-
-
   async deleteNode() {
     if (!this.contextMenuNode) {
       this.messageService.add({
@@ -272,12 +258,14 @@ export class TreeSelectPageComponent implements OnInit, OnDestroy {
     if(this.contextMenuNode.key){
       const key =this.contextMenuNode.key
       const result =this.treeService.deleteNode( key)
-      if(result ){
+      if(await result ){
         alert(`${key} deleted successufuly`)
+        this.findAndRemoveNode(this.contextMenuItems,key)
       }
       else{
         alert(`Something wrong to delete${key} `)
       }
+      this.ngOnInit()
 
 
 
@@ -285,11 +273,6 @@ export class TreeSelectPageComponent implements OnInit, OnDestroy {
     
 
   }
-
-
-
-
-
 
 
 

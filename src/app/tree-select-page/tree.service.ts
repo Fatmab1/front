@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of, throwError } from 'rxjs';
+import { firstValueFrom, Observable, of, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { TreeNode } from 'primeng/api';
 
@@ -107,18 +107,23 @@ export class TreeService {
     );
   }
 
-  deleteNode(key: string): Observable<boolean> {
+  async deleteNode(key: string): Promise<boolean> {
     console.log("Deleting node with key:", key);
-    
-    return this.http.get(`${this.apiUrl}usines/deleteNode/${encodeURIComponent(key)}`).pipe(
-      map((response: any) => {
-        return response?.affected > 0;
-      }),
-      catchError((error) => {
-        console.error('Error deleting node:', error);
-        return of(false); 
-      })
-    );
+    console.log("Type:", typeof key);
+
+    try {
+      // Encodage du paramètre dans l'URL pour éviter des erreurs
+      const encodedKey = encodeURIComponent(key);
+      const url = `http://localhost:3000/usines/deleteNode/${encodedKey}`;
+      
+      // Utilisation de `firstValueFrom` pour récupérer la réponse d'un observable sous forme de Promise
+      const result: any = await firstValueFrom(this.http.delete<{ affectedRows: number }>(url));
+
+      return result?.affectedRows > 0;
+    } catch (error) {
+      console.error("Error deleting node:", error);
+      return false;
+    }
   }
   // Generic error handler
   private handleError(message: string) {
