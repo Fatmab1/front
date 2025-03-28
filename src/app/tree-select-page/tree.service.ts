@@ -112,11 +112,9 @@ export class TreeService {
     console.log("Type:", typeof key);
 
     try {
-      // Encodage du paramètre dans l'URL pour éviter des erreurs
       const encodedKey = encodeURIComponent(key);
-      const url = `http://localhost:3000/usines/deleteNode/${encodedKey}`;
+      const url = `http://localhost:3000/usines/deleteNode/${key}`;
       
-      // Utilisation de `firstValueFrom` pour récupérer la réponse d'un observable sous forme de Promise
       const result: any = await firstValueFrom(this.http.delete<{ affectedRows: number }>(url));
 
       return result?.affectedRows > 0;

@@ -68,26 +68,7 @@
           </div>
         </div>
 
-        <div class="flex justify-end gap-2">
-          <button 
-            pButton 
-            type="button" 
-            label="Effacer" 
-            class="p-button-secondary"
-            icon="pi pi-trash"
-            (click)="formGroup.reset()"
-            [disabled]="!selectedNode"
-          ></button>
-          <button 
-            pButton 
-            type="submit" 
-            label="Valider" 
-            class="p-button-primary"
-            [disabled]="!selectedNode || formGroup.invalid"
-            [loading]="isLoading"
-            icon="pi pi-check"
-          ></button>
-        </div>
+ 
       </form>
     </ng-template>
   </p-card>

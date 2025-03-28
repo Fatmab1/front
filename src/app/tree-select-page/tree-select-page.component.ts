@@ -257,14 +257,12 @@ export class TreeSelectPageComponent implements OnInit, OnDestroy {
     }
     if(this.contextMenuNode.key){
       const key =this.contextMenuNode.key
-      const result =this.treeService.deleteNode( key)
-      if(await result ){
+      const result =await this.treeService.deleteNode(key)
+      if( result ){
         alert(`${key} deleted successufuly`)
         this.findAndRemoveNode(this.contextMenuItems,key)
       }
-      else{
-        alert(`Something wrong to delete${key} `)
-      }
+
       this.ngOnInit()
 
 
