@@ -76,39 +76,9 @@ export class TreeSelectPageComponent implements OnInit, OnDestroy {
   }
 
   private setupContextMenu(): void {
-    this.contextMenuItems = [
-      {
-        label: 'Ajouter',
-        icon: 'pi pi-plus',
-        command: () => this.addNode()
-      },
-      {
-        label: 'Supprimer',
-        icon: 'pi pi-trash',
-        command: () => this.deleteNode()
-      }
-    ];
   }
 
   loadTreeData(): void {
-    this.isLoading = true;
-    const sub = this.treeService.getTreeNodes().subscribe({
-      next: (usines) => {
-        this.treeData = this.treeService.transformToTreeNode(usines);
-        this.isLoading = false;
-      },
-      error: (err) => {
-        console.error('Erreur lors du chargement des données:', err);
-        this.isLoading = false;
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Erreur',
-          detail: 'Échec du chargement des données',
-          life: 3000
-        });
-      }
-    });
-    this.subscriptions.push(sub);
   }
 
   onNodeSelect(event: { node: TreeNode }): void {
@@ -118,13 +88,9 @@ export class TreeSelectPageComponent implements OnInit, OnDestroy {
   }
 
   onContextMenu(event: MouseEvent, node: TreeNode): void {
-    event.preventDefault();
-    event.stopPropagation();
-    this.contextMenuNode = node;
-    this.selectedNode = node;
-    this.formGroup.patchValue({ selectedNode: node });
   }
-
+  
+  
   private findAndRemoveNode(nodes: TreeNode[] | null, nodeToRemove: TreeNode | null): boolean {
     if (!nodes || !nodeToRemove) return false;
 

@@ -100,7 +100,7 @@ export class AddNodeDialogComponent {
   private setupChildTypes(): void {
     const typeMap: Record<string, string[]> = {
       'Usine': ['Unité de Fabrication'],
-      'Unité de Fabrication': ['Atelier'],
+      'Unité de Fabrication': ['Workshop'],
       'Atelier': ['Machine'],
       'Machine': ['Capteur']
     };
