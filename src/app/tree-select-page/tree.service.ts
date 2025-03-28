@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { Observable, of, throwError } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 import { TreeNode } from 'primeng/api';
 
 export interface Sensor {
@@ -89,6 +89,7 @@ export class TreeService {
     }));
   }
 
+
   addNode(nodeData: NodeAddRequest): Observable<any> {
 
     // Prepare the node data for backend
@@ -106,14 +107,19 @@ export class TreeService {
     );
   }
 
-  deleteNode(node: any, type: string): Observable<any> {
-    return this.http.request('DELETE', `${this.apiUrl}usines/deleteNode`, { 
-      body: { node, type } 
-    }).pipe(
-      catchError(this.handleError('Échec de la suppression du nœud'))
+  deleteNode(key: string): Observable<boolean> {
+    console.log("Deleting node with key:", key);
+    
+    return this.http.get(`${this.apiUrl}usines/deleteNode/${encodeURIComponent(key)}`).pipe(
+      map((response: any) => {
+        return response?.affected > 0;
+      }),
+      catchError((error) => {
+        console.error('Error deleting node:', error);
+        return of(false); 
+      })
     );
   }
-
   // Generic error handler
   private handleError(message: string) {
     return (error: any) => {
